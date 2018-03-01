@@ -1,0 +1,601 @@
+\documentclass[unknownkeysallowed]{beamer}
+%\usepackage{graphicx,epsfig,hyperref,booktabs,lmodern}
+\usepackage{graphicx,hyperref}
+
+\usepackage[backend=bibtex,style=authoryear,citestyle=authoryear-comp]{biblatex}
+\addbibresource{references.bib}
+
+\beamertemplatenavigationsymbolsempty
+
+\mode<presentation>
+{
+  \usetheme{bunsen}
+  \setbeamercovered{transparent}
+  \setbeamertemplate{items}[circle]
+}
+
+% set fonts
+%\usepackage{fontspec}
+%\setsansfont{Fontin Sans}
+%\setbeamerfont{frametitle}{size=\LARGE,series=\bfseries}
+
+% color definitions
+\usepackage{color}
+\definecolor{uipoppy}{RGB}{225, 64, 5}
+\definecolor{uipaleblue}{RGB}{96,123,139}
+\definecolor{uiblack}{RGB}{0, 0, 0}
+
+% title slide definition
+\title{The Fundamentals of S3 Objects and Methods}
+\author{Kenny Flagg}
+\institute[MSU]{Department of Mathematical Sciences \\
+Montana State University}
+\date{March 1, 2018}
+
+\begin{document}
+
+<<setup, echo = FALSE, message = FALSE, cache = FALSE>>=
+library(knitr)
+opts_chunk$set(echo = FALSE, comment = '#', message = FALSE, width = 60,
+               fig.align = 'center', fig.width = 6.5, fig.height = 3.5,
+               fig.pos = 'H', size = 'footnotesize', dev = 'pdf',
+               dev.args = list(pointsize = 10))
+#knit_theme$set('print')
+
+library(xtable)
+options(xtable.table.placement = 'H', width = 60, scipen = 2,
+        xtable.sanitize.rownames.function = function(x){return(x)},
+        show.signif.stars = FALSE)
+
+set.seed(-135173.2)
+@
+
+\setbeamertemplate{background}
+{\includegraphics[width=\paperwidth,height=\paperheight]{beamer_title_page1}}
+\setbeamertemplate{footline}[default]
+
+\begin{frame}
+\vspace*{.5cm}
+\begin{center}
+\textcolor{white}{\huge The Fundamentals of S3 Objects and Methods \\}
+\vspace{.5cm}
+\textcolor{white}{\Large Kenny Flagg}\\
+\textcolor{white}{\Large useR Bozeman}\\
+\textcolor{white}{\Large 1 March 2017}\\~\\
+\textcolor{white}{\url{https://github.com/kflagg/useRS3}}
+\end{center}
+\end{frame}
+
+% Set the background for the rest of the slides.
+% Insert infoline
+\setbeamertemplate{background}
+ {\includegraphics[width=\paperwidth,height=\paperheight]{msubg2}}
+%\setbeamertemplate{footline}[bunsentheme]
+
+
+\begin{frame}
+\frametitle{Outline}
+
+\begin{itemize}
+
+\item What is object-oriented (OO) programming?
+
+\item Some familiar classes of objects
+
+\item Writing methods to work with objects
+
+\item Case study: extending the \texttt{htest} class
+
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{What is object-oriented (OO) programming?}
+
+\begin{itemize}
+
+\item System of programming that models relationships among abstract structures.
+
+\item Simplifies development and maintainence of complicated programs.
+\parencite{rlang}
+
+\item Concepts:
+
+\begin{itemize}
+
+\item \emph{classes} define standard structures to store information.
+
+\item \emph{objects} are realized instances of classes.
+
+\item \emph{methods} are functions that act on objects according to their
+classes.
+
+\end{itemize}
+
+\item R has several different systems of defining objects.
+
+\begin{itemize}
+
+\item We will work with the S3 system, the least formal and by far most common.
+
+\end{itemize}
+
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{What is object-oriented (OO) programming?}
+
+I'm not developing packages. Why should I learn this programming
+mumbo-jumbo?
+
+\begin{itemize}
+
+\item Understanding others' code/debugging.
+
+\item Recycling your own code.
+
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Some familiar classes of objects}
+
+\begin{itemize}
+
+\item You have probably used objects of these classes:
+
+\begin{itemize}
+
+\item \texttt{data.frame}
+
+\item \texttt{lm}
+
+\item \texttt{glm}
+
+\item \texttt{htest}
+
+\end{itemize}
+
+\item Let's use the \texttt{str()} function to investigate!
+
+\end{itemize}
+
+<<str, echo = TRUE, eval = FALSE>>=
+str(iris)
+
+versicolor <- glm(I(Species == 'versicolor') ~
+                 Sepal.Length + Sepal.Width + Petal.Length + Petal.Width,
+                  family = binomial, data = iris)
+str(lm(Petal.Length ~ Species, data = iris))
+
+petal <- t.test(iris$Petal.Length, mu = 4)
+str(petal)
+@
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Some familiar classes of objects}
+
+<<striris, echo = TRUE>>=
+str(iris)
+@
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Some familiar classes of objects}
+
+<<strlm, echo = FALSE, eval = FALSE>>=
+versicolor <- glm(I(Species == 'versicolor') ~
+    Sepal.Length + Sepal.Width + Petal.Length + Petal.Width,
+  family = binomial, data = iris)
+str(versicolor)
+@
+\begin{knitrout}\footnotesize
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{versicolor} \hlkwb{<-} \hlkwd{glm}\hlstd{(}\hlkwd{I}\hlstd{(Species} \hlopt{==} \hlstr{'versicolor'}\hlstd{)} \hlopt{~}
+                 \hlstd{Sepal.Length} \hlopt{+} \hlstd{Sepal.Width} \hlopt{+} \hlstd{Petal.Length} \hlopt{+} \hlstd{Petal.Width,}
+                  \hlkwc{family} \hlstd{= binomial,} \hlkwc{data} \hlstd{= iris)}
+\hlkwd{str}\hlstd{(versicolor)}
+\end{alltt}
+\begin{verbatim}
+# List of 30
+#  $ coefficients     : Named num [1:5] 7.378 -0.245 -2.797 1.314 -2.778
+#   ..- attr(*, "names")= chr [1:5] "(Intercept)" "Sepal.Length" "Sepal.Width" "Petal.Length" ...
+#  $ residuals        :Class 'AsIs'  Named num [1:150] -1.09 -1.39 -1.21 -1.37 -1.07 ...
+#   .. ..- attr(*, "names")= chr [1:150] "1" "2" "3" "4" ...
+#  $ fitted.values    : Named num [1:150] 0.0849 0.2829 0.172 0.268 0.0671 ...
+#   ..- attr(*, "names")= chr [1:150] "1" "2" "3" "4" ...
+#  $ effects          :Class 'AsIs'  Named num [1:150] 2.383 0.739 4.822 -0.332 -2.368 ...
+#   .. ..- attr(*, "names")= chr [1:150] "(Intercept)" "Sepal.Length" "Sepal.Width" "Petal.Length" ...
+...
+#  - attr(*, "class")= chr [1:2] "glm" "lm"
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Some familiar classes of objects}
+
+~\vspace{-2em}
+<<strttest, echo = TRUE>>=
+petal <- t.test(iris$Petal.Length, mu = 4)
+str(petal)
+@
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Some familiar classes of objects}
+
+\begin{itemize}
+
+\item Many objects are actually lists with a \texttt{class} attribute.
+
+\item What happens when you change a data frame's class to ``list''?
+
+<<dfex, eval = FALSE, echo = TRUE>>=
+dframe <- data.frame(x = 1:4, y = 5:8, row.names = letters[1:4])
+dframe
+class(dframe) <- 'list'
+dframe
+@
+
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Some familiar classes of objects}
+
+\vspace{-2em}
+<<dfex, echo = TRUE>>=
+@
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Writing methods to work with objects}
+
+\begin{itemize}
+
+\item Objects are nouns.
+
+\item Methods are verbs.
+
+\begin{itemize}
+
+\item They tell the computer what to do to objects.
+
+\end{itemize}
+
+\item S3 methods are functions with different versions defined for each class.
+
+\begin{itemize}
+
+\item \texttt{print}, \texttt{summary}, \texttt{plot} all behave according to
+the class of the object.
+
+\end{itemize}
+
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Writing methods to work with objects}
+
+\begin{itemize}
+
+\item You can see what methods are available for a class.
+
+<<lmmethods, echo = TRUE, eval = FALSE>>=
+methods(class = 'lm')
+@
+
+\item Are there things you didn't know you could do with \texttt{lm} objects?
+
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Writing methods to work with objects}
+
+\begin{itemize}
+
+\item What do methods look like? (Recall you can usually type the name of a
+function to see its source code.)
+
+<<summarymethods, echo = TRUE, eval = FALSE>>=
+summary
+
+summary.data.frame
+
+summary.lm
+
+summary.default
+@
+
+\item Some source code is hidden, but you can often find it with
+\texttt{getS3method}.
+
+<<gets3, echo = TRUE, eval = FALSE>>=
+plot.lm
+
+getS3method('plot', 'lm')
+@
+
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Writing methods to work with objects}
+
+\begin{itemize}
+
+\item Generic methods are defined with \texttt{UseMethod}.
+<<summarydef, echo = TRUE, eval = FALSE>>=
+method <- function(x, ...) UseMethod('method')
+@
+
+\item Methods for specific classes are named \texttt{method.class}.
+
+\item If a method isn't defined for a class, R uses \texttt{method.default}.
+
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Case study}
+
+Let's extend the \texttt{htest} class to handle a one-sample simulation test!
+
+Then we'll write a method to plot a histogram of the sampling distribution.
+
+<<simtest>>=
+# A function to perform a one sample simulation test of the mean.
+# Arguments:
+#  x            Data vector.
+#  mu           Value of the true mean under the null hypothesis.
+#  alternative  Type of alternative hypothesis (currently ignored).
+#  nsims        Number of samples to simulate.
+sim.test <- function(x, mu = 0, alternative = 'less', nsims = 1000){
+  # Sample size.
+  n <- length(x)
+
+  # Observed sample mean.
+  xbar <- mean(x)
+
+  # Subtract the observed mean and add the hypothesized mean to create a
+  # "sample" where the null hypothesis is true.
+  H0 <- x - xbar + mu
+
+  # Means of permutations (NA for now).
+  means <- rep(NA_real_, nsims)
+
+  # Loop nsims times...
+  for(i in 1:nsims){
+    # ...sample with replacement (assuming the null value is the true mean)...
+    sim <- sample(x = H0, size = n, replace = TRUE)
+
+    # ...and save the simulated sample mean.
+    means[i] <- mean(sim)
+  }
+
+  # Get the proportion of samples where the mean was less than the original
+  # sample mean (a left-tailed test).
+  p.value <- sum(xbar < means) / nsims
+
+  # You try: add code to check whether the alternative argument is "greater",
+  # "less", or "two-sided" and then calculate the appropriate p-value.
+
+  # This is helpful reporting information displayed by the print.htest function.
+  method <- 'One Sample Simulation Test'
+  estimate <- setNames(xbar, 'mean of x')
+  parameter <- setNames(nsims, 'number of simulations')
+  data.name <- deparse(substitute(x))
+
+  # Combine everything into a list.
+  result <- list(
+    estimate = estimate,
+    parameter = parameter,
+    p.value = p.value,
+    null.value = mu,
+    alternative = alternative,
+    method = method,
+    data.name = data.name,
+    null.dist = means 
+  )
+  class(result) <- c('simtest', 'htest')
+
+  return(result)
+}
+
+# Plot method for the simtest class.
+# Arguments:
+#  x         A simtest object.
+#  line.col  Color of the line marking the observed sample mean.
+#  ...       Other arguments to pass to hist (breaks, xlim, etc).
+plot.simtest <- function(x, line.col = 'red', ...){
+  # Histograms invisibly return an object containing their breaks, counts, etc.
+  # Save that object so we can return it too.
+  h <- hist(x$null.dist, ...)
+
+  # You try: Use the breaks and counts/densities from h to shade in the p.value.
+
+  # Add a vertical line to the plot.
+  abline(v = x$estimate, col = line.col)
+
+  # Save the point estimate as an attribution of the histogram object.
+  attr(h, 'xbar') <- x$estimate
+
+  # Invisibly return the histogram object.
+  invisible(h)
+}
+@
+
+<<printsimtest, echo = TRUE>>=
+result <- sim.test(iris$Petal.Length, mu = 4)
+
+# This uses the print.htest function.
+result
+@
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Case study}
+
+~\vspace{-2em}
+<<plotsimtest, echo = TRUE>>=
+# This uses the plot.simtest function.
+plot(result, breaks = 100, freq = FALSE)
+@
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Case study}
+
+~\vspace{-1.5em}
+\begin{itemize}\small
+
+\item Write a function that does a one sample simulation test. Try it out on
+your favorite dataset.
+
+\item I put some example code to do a simulation test on GitHub:
+\url{https://github.com/kflagg/useRS3/blob/master/code.r}
+
+\item At the end of the function, combine the variables into a list (use the
+variable names in the code below).
+
+\item Set the class to a vector containing \verb|"htest"| and a second class
+like \verb|"simtest"|. Try running your function with and without setting the
+class.
+
+\end{itemize}
+
+~\vspace{-1.5em}
+<<simtestobject, echo = TRUE, eval = FALSE, size = 'tiny'>>=
+result <- list(
+  # These are standard elements of htest objects.
+  estimate = ...,       # An estimate of the mean.  
+  parameter = ...,      # Optional. I put the number of simulations here.
+  p.value = ...,        # Your p-value.
+  null.value = ...,     # The value of the mean under the null hypothesis.
+  alternative = ...,    # The text "less" for a left-tailed test.
+  method = ...,         # A name for the method, like "Simulation Test"
+  data.name = ...,      # The name of the data vector (text).
+
+  # This is something new for the simtest class.
+  null.dist = ...       # The vector of simulated sample means.
+)
+
+class(result) <- c(...) # Make the class "htest" and "simtest".
+@
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Case study}
+
+\begin{itemize}
+
+\item Write a function that
+
+\begin{itemize}
+
+\item takes at least one argument (a \texttt{simtest} object),
+
+\item plots a histogram of the object's \texttt{null.dist} variable,
+
+\item and draws a vertical line at the observed value (the \texttt{estimate}).
+
+\end{itemize}
+
+\item Name the function \texttt{plot.simtest}.
+
+\end{itemize}
+
+<<simtestplotmethod, echo = TRUE, eval = FALSE>>=
+plot.simtest <- function(...){
+  ...
+}
+
+plot(result)
+@
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+\frametitle{Summary}
+
+Today we learned...
+
+\begin{itemize}
+
+\item How object-oriented programming works in R.
+
+\begin{itemize}
+
+\item Classes are created by changing \verb|class(object) <- ...|.
+
+\item Methods are functions named like \texttt{method.class}.
+
+\item You run \texttt{method(object)} and R will automatically use
+\texttt{method.class(object)}.
+
+\end{itemize}
+
+\item How some familiar objects are structured.
+
+\begin{itemize}
+
+\item Most are just lists.
+
+\end{itemize}
+
+\item How to create a new class and write a method.
+
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}[allowframebreaks]
+\frametitle{References}
+
+\vspace{-0.5cm}{\tiny
+\printbibliography
+}
+\end{frame}
+
+\end{document}
