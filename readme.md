@@ -14,6 +14,8 @@ Contents
   Knitr file for the presentation with my complete example code.
 - `code.r`  
   R script with starter code for the examples.
+- `solution.r`  
+  R script with my finished code for the examples.
 - `xtabulate-example.r`  
   R script with an example `xtabulate` class and print method that I developed
   to get my homework done more efficiently.
